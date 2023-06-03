@@ -79,6 +79,35 @@ I've been happily developing Microthemer and supporting users of varying technic
 
 == Changelog ==
 
+= 7.2.2.3 (June 2nd, 2023) =
+
+# Bugs fixed
+* When viewing logic settings for a folder with no condition immediately after one that does have a condition, the condition continued to display in the textarea.
+
+= 7.2.2.2 (June 1st, 2023) =
+
+# Change
+* Microthemer used to highlight elements in grey if a selector would target the current element, but is in a conditional folder that doesn't load on the page. This was useful for hinting if you might want to extend the targeting of an existing selector to other pages, but arguably distracting. As it was necessary to use the "Create an additional selector" option fairly frequently. So on balance, I think it's better not to highlight such selectors in grey. Grey highlighting is now reserved for when you click a non-loading selector in the folders menu (rather than selecting elements on the page).
+
+# Bugs fixed
+* Microthemer falsely flagged comma separated :not/:is pseudo selectors as invalid e.g. not:(p, li). Also, MT formatted such comma separated selectors on new lines, which looked messy in the editor.
+* Possible PHP warning after an initial install when viewing site frontend: Warning: Undefined array key 'initial_scale'.
+
+= 7.2.2.1 (May 30th, 2023) =
+
+# Bugs fixed
+* Display issue on the view code tabs if a folder name was fairly long.
+* Custom JavaScript added via the full code view was not loading on the page.
+
+= 7.2.2.0 (May 25th, 2023) =
+
+# Enhancement
+* Added links to  help videos when displaying the "Folder not loading" warning.
+
+# Bugs fixed
+* Two issues if "Stylesheet loading order" preference was set - MT could output the same CSS file again under some circumstances (after the body tag). And Microthemer folders did not always show as faded out in the main menu to indicate when they are not loading.
+* When Microthemer automatically created a folder for the current page, the folder name could be quite long. MT now caps the length at 35 characters, to the nearest whole word.
+
 = 7.2.1.9 (May 22nd, 2023) =
 
 # Enhancement

@@ -7776,7 +7776,7 @@ class Admin {
 
 					// Custom MT function - is gutenberg editor screen
 					$custom_links[] = array(
-						'label' => 'Is Gutenberg',
+						'label' => 'Is Gutenberg block editor',
 						'logic' => '\Microthemer\query_admin_screen("is_block_editor", true)',
 						'logic_only' => 1
 					);

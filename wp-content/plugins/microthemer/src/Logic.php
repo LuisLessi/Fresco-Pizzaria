@@ -75,13 +75,13 @@ class Logic {
 
 
 		// custom namespaced Microthemer functions
+		'\\'.__NAMESPACE__.'\is_active',
 		'\\'.__NAMESPACE__.'\is_admin_page',
 		'\\'.__NAMESPACE__.'\is_public',
 		'\\'.__NAMESPACE__.'\is_public_or_admin',
+		'\\'.__NAMESPACE__.'\match_url_path',
 		'\\'.__NAMESPACE__.'\query_admin_screen',
 		'\\'.__NAMESPACE__.'\user_has_role',
-		'\\'.__NAMESPACE__.'\is_active',
-		'\\'.__NAMESPACE__.'\match_url_path',
 
 		// native PHP
 		'isset',

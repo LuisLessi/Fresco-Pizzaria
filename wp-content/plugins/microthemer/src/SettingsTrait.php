@@ -206,6 +206,7 @@ trait SettingsTrait {
 
 			// if the draft file doesn't exist, but the published one does, clean the published file
 			elseif (file_exists($published_file)){
+				//echo 'we should del pub: ' . $published_file;
 				unlink($published_file);
 			}
 		}
@@ -1044,7 +1045,7 @@ trait SettingsTrait {
 		$conditionalDir = $root . 'mt/conditional/draft/';
 		$global_css =  $root . 'draft-styles.css';
 		$global_scss =  $root . 'draft-styles.scss';
-		$global_js =  $root . 'draft-scripts.scss';
+		$global_js =  $root . 'draft-scripts.js';
 
 		// we only minified published assets, if that preferences is set (on by default)
 		/*$minifyCSS = !empty($this->preferences['minify_css']);

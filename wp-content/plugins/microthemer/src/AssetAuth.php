@@ -95,13 +95,21 @@ class AssetAuth extends AssetLoad {
 	// add frontend JS data (inc the login page)
 	function hookFrontendData(){
 
+        $p = $this->preferences;
+
         // load this data in the footer on admin pages so that get_current_screen has all the info
         // but keep in head on frontend as it was a breaking change, for themes not calling wp_footer hook
-        $hook = $this->isAdminArea ? 'footer' : 'head';
-        add_action( $this->hooks[$hook], array(&$this, 'addFrontendData'));
+        $action_hook = $this->isAdminArea ? 'admin_footer' : $this->getCSSActionHook($p);
 
+        // determine the action execution order
+		$action_order = $this->getCSSActionOrder($p);
+
+        // add the frontend data script
+        add_action( $action_hook, array(&$this, 'addFrontendData'), $action_order);
+
+        // load on login page too
         if ($this->isFrontend){
-	        add_action( 'login_head', array(&$this, 'addFrontendData'));
+	        add_action( 'login_head', array(&$this, 'addFrontendData'), $action_order);
         }
 	}
 
