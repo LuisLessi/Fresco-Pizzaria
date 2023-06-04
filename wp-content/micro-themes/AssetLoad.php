@@ -135,15 +135,18 @@ if (!class_exists('\Microthemer\AssetLoad')){
 		}
 
 		function getCSSActionHook($p){
-			return !empty($p['stylesheet_in_footer'])
+			$logic_test = isset($_GET['test_logic']);
+
+			return !empty($p['stylesheet_in_footer']) && !$logic_test
 				? $this->hooks['footer']
-				: (!empty($p['stylesheet_order'])
+				// with test_logic, we want logic checked before output buffer HTML in head screws up JSON
+				: (!empty($p['stylesheet_order']) && !$logic_test
 					? $this->hooks['head']
 					: $this->hooks['enqueue_scripts']);
 		}
 
 		function getCSSActionOrder($p){
-			return !empty($p['stylesheet_order'])
+			return !empty($p['stylesheet_order']) && !isset($_GET['test_logic'])
 				? intval($p['stylesheet_order'])
 				: $this->defaultActionHookOrder;
 		}
@@ -337,7 +340,7 @@ if (!class_exists('\Microthemer\AssetLoad')){
 		}
 
 		function hookViewportMeta($p){
-			if ($p['initial_scale'] == 1) {
+			if (!empty($p['initial_scale'])) {
 				add_action($this->hooks['head'], array(&$this, 'addViewportMeta'));
 			}
 		}
@@ -486,6 +489,7 @@ if (!class_exists('\Microthemer\AssetLoad')){
 
 				// do_item not do_items, otherwise it renders other stylesheets in the queue before they might be ready
 				$wp_styles->do_item($handle);
+				$wp_styles->done[] = $handle;
 			}
 
 			// or enqueue normally

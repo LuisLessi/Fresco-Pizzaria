@@ -75,9 +75,11 @@ class Logic {
 
 
 		// custom namespaced Microthemer functions
+		'\\'.__NAMESPACE__.'\is_active',
 		'\\'.__NAMESPACE__.'\is_admin_page',
 		'\\'.__NAMESPACE__.'\is_public',
 		'\\'.__NAMESPACE__.'\is_public_or_admin',
+		'\\'.__NAMESPACE__.'\match_url_path',
 		'\\'.__NAMESPACE__.'\query_admin_screen',
 		'\\'.__NAMESPACE__.'\user_has_role',
 
@@ -130,12 +132,12 @@ class Logic {
 		);
 	}
 
-	// replace is_page(2) with is_page^2^ so that parenthesis in function doesn't create a new group
+	// replace is_page(2) with is_page^^2^^ so that parenthesis in function doesn't create a new group
 	protected function addCarets($string){
 
 		return preg_replace(
 			"/(".$this->patterns['functionName'].")\((.*?)\)/s",
-			'$1^$3^',
+			'$1^^$3^^',
 			$string
 		);
 	}
@@ -143,7 +145,7 @@ class Logic {
 	protected function removeCarets($string){
 
 		return preg_replace(
-			"/(".$this->patterns['functionName'].")\^(.*?)\^/s",
+			"/(".$this->patterns['functionName'].")\^\^(.*?)\^\^/s",
 			'$1($3)',
 			$string
 		);
@@ -508,7 +510,7 @@ class Logic {
 		$this->current = array();
 		$this->stack = array();
 
-		// use caret ^ placeholder for function parenthesis we don't create an extra group
+		// use caret ^^ placeholder for function parenthesis we don't create an extra group
 		// and replace && with and for simpler regex/logic
 		$string = $this->normaliseAndOr(
 			$this->addCarets(
@@ -745,4 +747,31 @@ function query_admin_screen($key = null, $value = null){
 // check if the user has a particular role
 function user_has_role($role = null){
 	return is_user_logged_in() && $role === null || wp_get_current_user()->roles[0] === $role;
+}
+
+// check if a theme or plugin is active, slug is the directory slug e.g. 'microthemer' or 'divi'
+function is_active($item = null, $slug = null){
+	switch ($item) {
+		case 'plugin':
+			$active_plugins = get_option('active_plugins', array());
+			foreach($active_plugins as $path){
+				if (strpos($path, $slug) !== false){
+					return true;
+				}
+			}
+			return is_plugin_active_for_network($slug);
+		case 'theme':
+			$theme = wp_get_theme();
+			return $theme->get_stylesheet() === $slug;
+		default:
+			return false;
+	}
+}
+
+// check if the current url matches a path
+function match_url_path($value = null, $regex = false){
+	$urlPath = $_SERVER['REQUEST_URI'];
+	return $regex
+		? preg_match('/'.$value.'/', $urlPath)
+		: strpos($urlPath, $value) !== false;
 }
