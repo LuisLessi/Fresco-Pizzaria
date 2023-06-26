@@ -4,7 +4,7 @@ namespace Microthemer;
 
 trait PluginTrait {
 
-	var $version = '7.2.2.3';
+	var $version = '7.2.2.8';
 	var $db_chg_in_ver = '7.0.5.0';
 	var $minimum_wordpress = '5.6';
 	var $preferencesName = 'preferences_themer_loader';
@@ -16,7 +16,7 @@ trait PluginTrait {
 	var $detachedpreviewpage = 'tvr-microthemer-preview-wrap.php';
 	var $docspage = 'tvr-docs.php';
 	var $fontspage = 'tvr-fonts.php';
-	var $preferences = array();
+	//var $preferences = array(); PHP warning when AssetLoad runs
 	var $current_user_id = -1;
 
 	// Previously dynamic properties

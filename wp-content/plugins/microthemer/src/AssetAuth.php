@@ -266,12 +266,12 @@ class AssetAuth extends AssetLoad {
         // single post/page on frontend or admin side
 	    if ( $wp_query->is_page || $wp_query->is_single || $isAdminPostPageEdit ) {
 		    $slug = $post->post_name;
+		    $type = $wp_query->is_page ? 'page' : 'single';
 		    $logic = $isAdminPostPageEdit
                 ? '\Microthemer\is_public_or_admin("'.$slug.'")'
-                : 'is_page("'.$slug.'")';
+                : 'is_'.$type.'("'.$slug.'")';
 		    $post_id = $id = $post->ID;
 		    $post_title = $title = ($this->isAdminArea ? $adminPrefix : '') .  $post->post_title;
-		    $type = $wp_query->is_page ? 'page' : 'single';
 
             if ($isAdminPostPageEdit && $screen){
 	            $alt[] = array(

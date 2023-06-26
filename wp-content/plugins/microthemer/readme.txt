@@ -79,6 +79,32 @@ I've been happily developing Microthemer and supporting users of varying technic
 
 == Changelog ==
 
+= 7.2.2.8 (June 20th, 2023) =
+
+# Bugs fixed
+* Issue saving custom folder logic when using a custom port number on localhost e.g. localhost:9017. This may have caused other issues as well.
+
+= 7.2.2.7 (June 19th, 2023) =
+
+# Bugs fixed
+* Microthemer did not create valid conditional folders when targeting content on single post type pages.
+
+= 7.2.2.6 (June 9th, 2023) =
+
+# Change
+* Microthemer used to try to maintain the current folder if it loaded on the page, even if that was at odds with the Global vs Page switch in the footer. Now it honours the switch more strictly. This makes the feature more predictable and solves the issue of accidentally switching between global vs page styles when re-selecting elements that have an existing selector.
+
+= 7.2.2.5 (June 9th, 2023) =
+
+# Change
+* GZIP compression on the MT interface is enabled by default. This will make MT load faster, and should not occasionally result in a blank page now that the session issue has been addressed.
+
+# Bugs fixed
+* Possible PHP warning about $preferences being defined in Trait and Class.
+* Possible https warning in the console when saving preferences on the standalone page.
+* Compatibility issue with GZIP preference if a PHP session was active, a blank screen was displayed.
+
+
 = 7.2.2.3 (June 2nd, 2023) =
 
 # Bugs fixed

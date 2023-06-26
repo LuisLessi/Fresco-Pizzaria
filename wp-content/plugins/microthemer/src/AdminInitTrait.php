@@ -107,11 +107,13 @@ trait AdminInitTrait {
 
 		// enable gzipping on UI page if defined
 		if ( $_GET['page'] == basename(__FILE__) and $this->preferences['gzip'] == 1) {
-			if (!empty($_SERVER['HTTP_ACCEPT_ENCODING']) and
-			    substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip'))
+			if (session_id() === null &&
+			    !empty($_SERVER['HTTP_ACCEPT_ENCODING']) &&
+			    substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')){
 				ob_start("ob_gzhandler");
-			else
+			} else {
 				ob_start();
+			}
 		}
 
 		// add scripts and styles

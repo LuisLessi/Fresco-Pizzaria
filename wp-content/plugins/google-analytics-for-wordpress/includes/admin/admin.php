@@ -58,7 +58,10 @@ function monsterinsights_admin_menu()
 	// Add Popular Posts menu item.
 	add_submenu_page($hook, __('Popular Posts:', 'google-analytics-for-wordpress'), __('Popular Posts', 'google-analytics-for-wordpress'), 'monsterinsights_save_settings', $submenu_base . '#/popular-posts');
 
-	if (function_exists('aioseo')) {
+	// Add submenu under `Insights` main menu for user journey report.
+	add_submenu_page( $hook, __( 'User Journey:', 'google-analytics-for-wordpress' ), __( 'User Journey', 'google-analytics-for-wordpress' ), 'monsterinsights_view_dashboard', 'admin.php?page=monsterinsights_reports#/user-journey-report' );
+
+	if ( function_exists( 'aioseo' ) ) {
 		$seo_url = monsterinsights_aioseo_dashboard_url();
 	} else {
 		$seo_url = $submenu_base . '#/seo';
@@ -759,5 +762,5 @@ function monsterinsights_empty_measurement_protocol_token()
 	echo '<div class="error"><p>' . $message . '</p></div>'; // phpcs:ignore
 }
 
-add_action('admin_notices', 'monsterinsights_empty_measurement_protocol_token');
-add_action('network_admin_notices', 'monsterinsights_admin_setup_notices');
+add_action( 'admin_notices', 'monsterinsights_empty_measurement_protocol_token' );
+add_action( 'network_admin_notices', 'monsterinsights_admin_setup_notices' );

@@ -25,7 +25,10 @@ $this->display_log();
 	action="admin.php?page=<?php echo $page_context;?>" >
 	<?php //wp_nonce_field('tvr_preferences_submit'); ?>
 	<input type="hidden" name="tvr_preferences_form" value="1" />
-	<?php echo $this->start_dialog('display-preferences', esc_html__('Edit Preferences', 'microthemer'), 'medium-dialog',
+	<?php echo $this->start_dialog(
+        'display-preferences',
+        esc_html__('Preferences', 'microthemer') . '<span class="dialog-sub-heading"> - <span class="link download-preferences">Download preferences</span></span>',
+        'medium-dialog',
 		array(
 			esc_html_x('General', '(General Preferences)', 'microthemer' ),
 			esc_html__('Units', 'microthemer'),
@@ -51,15 +54,8 @@ $this->display_log();
             'css_sass' => array(
               'label' => __('CSS and Sass', 'microthemer'),
               'items' => array(
-	              'css_important' => array(
-		              'label' => __('Always add !important to CSS styles', 'microthemer'),
-		              'label_no' => '(configure manually)',
-		              'explain' => __('Always add the "!important" CSS declaration to CSS styles. This largely solves the issue of having to understand how CSS specificity works. But if you prefer, you can disable this functionality and still apply "!important" on a per style basis by clicking the faint "i\'s" that will appear to the right of every style input.', 'microthemer')
-	              ),
-	              'allow_scss' => array(
-		              'label' => __('Enable Sass (at cost of syncing editor with UI fields)', 'microthemer'),
-		              'explain' => __('Enable this option if you want to write raw Sass code in the custom code editors or use Sass variables and mixins etc in the GUI fields. Disable this option if you want the CSS code you write to be interchangeably editable with the GUI fields' , 'microthemer')
-	              ),
+	              'css_important' => $this->initial_preference_options['css_important'],
+	              'allow_scss' => $this->initial_preference_options['allow_scss'],
 	              'minify_css' => array(
 		              'label' => __('Minify the CSS file Microthemer generates', 'microthemer'),
 		              'explain' => __('Minify the CSS code Microthemer outputs - not necessary is you use an asset optimisation plugin' , 'microthemer')
@@ -193,14 +189,6 @@ $this->display_log();
 			            'explain' => __('The numbers in the tape measure design may be helpful, but it involves dragging left to increase values, which may feel unintuitive', 'microthemer'),
 
 		            ),
-		           /* 'mt_dark_mode' => array(
-			            'label' => __('Use a dark theme for the custom code editor', 'microthemer'),
-			            'explain' => __('If you prefer a dark background when writing CSS code in the custom code editor, set this to yes.' , 'microthemer')
-		            ),*/
-		            /*'tooltip_en_prop' => array(
-			            'label' => __('Show CSS syntax in property tooltips (english code)', 'microthemer'),
-			            'explain' => __("If you want learn valid CSS syntax while you work in Microthemer, set this option to Yes. Seeing the actual CSS property may be particularly useful if you're using a non-english translation", 'microthemer'),
-		            ),*/
 		            'gzip' => array(
 			            'label' => __('Gzip the Microthemer UI page for faster loading', 'microthemer'),
 			            'explain' =>__('Having this gzip option enabled will speed up the initial page loading, but you can switch it off if this setting is not compatible with your server.', 'microthemer')

@@ -289,6 +289,7 @@ function monsterinsights_admin_scripts()
 				'wpmailsmtp_admin_url'            => admin_url('admin.php?page=wp-mail-smtp'),
 				'load_headline_analyzer_settings' => monsterinsights_load_gutenberg_app() ? 'true' : 'false',
 				'exit_url'                        => add_query_arg('page', 'monsterinsights_settings', admin_url('admin.php')),
+				'timezone'                        => date('e'),
 			)
 		);
 

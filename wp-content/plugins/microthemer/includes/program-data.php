@@ -624,39 +624,44 @@ $default_asset_loading_config = array(
 	'global_css' => 1,
 	'global_g_fonts' => 0,
 	'conditional' => array(),
-	//'change' => array(),
 	'logic' => array(),
 );
 
-// define the default preferences here (these can be reset)
-$this->default_preferences = array(
+// Initial Setup Preference Options
+$this->initial_preference_options = array(
+	'css_important' => array(
+		'label' => __('Always add !important to CSS styles', 'microthemer'),
+		'label_no' => '(configure manually)',
+		'explain' => __('Always add the "!important" CSS declaration to CSS styles. This largely solves the issue of having to understand how CSS specificity works. But if you prefer, you can disable this functionality and still apply "!important" on a per style basis by clicking the [i] icons that will appear to the right of every style input.', 'microthemer')
+	),
+	'allow_scss' => array(
+		'label' => __('Enable Sass (at cost of syncing editor with UI fields)', 'microthemer'),
+		'explain' => __('Enable this option if you want to write raw Sass code in the custom code editors or use Sass variables and mixins etc in the GUI fields. Disable this option if you want the CSS code you write to be interchangeably editable with the GUI fields' , 'microthemer')
+	),
+	'mt_dark_mode' => array(
+		'label' => __('Use a dark theme for the Microthemer interface', 'microthemer'),
+		'explain' => __('Microthemer defaults to your light vs dark PC system preference, but you can switch MT\'s UI theme', 'microthemer')
+	)
+);
 
-	// non-coder has diff setting from dev
+// define the default preferences here (these can be reset & exported)
+$this->default_preferences = array(
 	"css_important" => 1,
 	"selname_code_synced" => 0,
 	"wizard_expanded" => 0,
 	"show_code_editor" => 0,
 	"code_manual_resize" => 0,
-
+	"initial_scale" => 0,
+	"abs_image_paths" => 0,
 	"full_editor_instant_save" => 0,
 	"inline_editor_instant_save" => 1,
-
-	// docking things to left - coming soon
 	"dock_whole_gui_left" => 0,
 	"dock_inline_editor_left" => 0,
 	"dock_full_editor_left" => 0,
-
-	// general
 	"global_styles_on_login" => 1,
-
-	// pseudo element base styles added when creating a variation
 	"pseudo_base_styles" => 0,
-
 	"active_scripts_footer" => 0,
-	"active_scripts_deps" => 0, // comma sep list of dependencies
 	"hover_inspect" => 1, // this is hard set in $this->getPreferences()
-	//"auto_folders" => 1,
-	//"auto_folders_page" => 1, - this is set differently for fresh install vs upgrade
 	"prev_folder" => array(
 		'global' => '',
 		'conditional' => ''
@@ -665,44 +670,22 @@ $this->default_preferences = array(
 	"hover_inspect_off_initially" => 0,
 	"scroll_to_elements" => 1, // scroll to out of view elements in reposition_overlays
 	"allow_scss" => 0, // if enabled by default, invalid css/scss will prevent stylesheet update.
-	"image_path_validated" => 0,
-	"active_events" => '',
-
-	"recent_logic" => array(),
-	"asset_loading" => $default_asset_loading_config,
-	"asset_loading_published" => $default_asset_loading_config,
-
-	// temp preferences until folder-specific dependencies are supported (rather than going in global stylesheet)
-	"global_stylesheet_required" => 1,
-	"global_stylesheet_required_published" => 1,
-
-	"load_js" => 0, // global JS
-	"load_js_published" => 0, // global JS - this is dynamically set to "load_js" value when upgrading
-
 	"sync_browser_tabs" => 0,
 	"specificity_preference" => 1, // 1 = high, 0 = low
 	"wp55_jquery_version" => 0,
 	"bricks_container_hack" => 0, // no longer necessary since Bricks 1.4
 	"remove_all_bricks_container_hacks" => 0,
-	"custom-prefix-extraValue" => '',
-	"recent_custom_prefixes" => array(),
 	"insert_custom_field_classes" => 0,
 	"autoload_oxygen" => 0,
 	"autoload_elementor" => 0,
 	"autoload_FLBuilder" => 0,
 	"selector_auto_name" => 1, // always on by default
-	"inlineJsProgData" => 0,
 	"tape_measure_slider" => 1,
-	"grid_focus" => 'gridtemplate',
-	"transform_focus" => 'transformscale',
 	"monitor_js_errors" => 1,
-	"generated_css_focus" => 0,
 	"stylesheet_in_footer" => 0,
-	"gzip" => 0, // try having this off by default
+	"gzip" => 1, // try having this off by default - realised there was an issue with sessions now fixed - try having on again
 	"hide_ie_tabs" => 1,
 	"show_extra_actions" => 1, // have the icons showing by default (change)
-	"default_sug_values_set" => 0,
-	"default_sug_variables_set" => 0,
 	"grid_highlight" => 1,
 	"expand_grid" => 0, // this doesn't get saved
 	"minify_css" => 1, // because this only happens to published assets now
@@ -710,56 +693,28 @@ $this->default_preferences = array(
 	"mt_dark_mode" => 0, // dark theme
 	"draft_mode" => 1, // need to have draft_mode_conversion when upgrading people - on by default
 	"auto_publish_mode" => 0, // maybe don't launch beta with this, but add if requested
-	"draft_mode_uids" => array(),
-	//"safe_mode_notice" => 1,
 	"color_as_hex" => 0,
-
-	"pie_by_default" => 0,
 	"admin_bar_preview" => 1, // because WP jumps out of iframe now
 	"admin_asset_loading" => 0,
 	"admin_asset_editing" => 0,
-	"manual_recompile_all_css" => 0,
 	"admin_bar_shortcut" => 1,
 	"top_level_shortcut" => 1, // with auto referrer this is more useful and should be on by default
-
 	"first_and_last" => 0,
 	"all_devices_default_width" => '',
-	"returned_ajax_msg" => '',
-	"returned_ajax_msg_seen" => 1,
 	"edge_mode" => 0,
-	//"edge_config" => array(),
 	"tooltip_delay" => 500,
 	"num_history_points" => 50,
-	"clean_uninstall" => 0,
-	"my_props" => $this->default_my_props,
-	"custom_paths" => array('/'),
-	"viewed_import_stylesheets" => array(
-		// theme css is an obvious one
-		get_stylesheet_directory_uri() . '/style.css',
-		// and MT might be useful for authors converting custom code to GUI
-		$this->micro_root_url . 'active-styles.css'
-	),
-
-	// docking options
-	"suggested_layout" => 'M', //
-	"dock_folders_left" => 1, // new in MT7
-	"dock_styles_left" => 1, // newish in MT7 (just styles docked)
-	"dock_editor_left" => 1, // keep
-	"full_height_left_sidebar" => 1, // we want more room for the quick icons
+	"suggested_layout" => 'M',
+	"dock_folders_left" => 1,
+	"dock_styles_left" => 1,
+	"dock_editor_left" => 1,
+	"full_height_left_sidebar" => 1,
 	"sticky_styles_toolbar" => 1,
-
-	// if the sidebar height can change the toggling on and off is glitchy
-	// so for now, I'm setting this new feature on and commenting out the HTML. Uncomment to solve this differently.
 	"full_height_right_sidebar" => 0,
-
 	"expand_device_tabs" => 0,
 	"dock_wizard_right" => 0,
-	"dock_settings_right" => 0, // new in MT7
-
-
-	"detach_preview" => 0, // keep
-
-	// default panel sizing (customisable)
+	"dock_settings_right" => 0,
+	"detach_preview" => 0,
 	"layout" => array(
 		'preset' => 's', // maybe set this dynamically
 		'left' => array(
@@ -829,31 +784,14 @@ $this->default_preferences = array(
 		),
 
 	),
-
 	"show_rulers" => 1,
-	"show_text_labels" => 1, // change try these on by default
-	//"highlighting" => 0,
-	"ruler_sizing" => array ('x' => 0, 'y' => 0),
-	"hide_interface" => 0,
+	"show_text_labels" => 1,
 	"show_sampled_variables" => 0,
 	"show_sampled_values" => 0,
-	"mt_color_variables_css" => "",
-	"enq_js" => array(),
-	"num_saves" => 0, // keep track of saves for caching purposes
-	"num_unpublished_saves" => 0,
-
-	// might be better to tab into the revisions table as saves can happen when running internal data formatting updates
-	"num_revisions" => 0,
-	"num_unpublished_revisions" => 0,
-
-	// "show_adv_wizard" => 0,
 	"adv_wizard_tab" => 'refine-targeting',
 	"program_settings_tab" => 'general',
 	"overwrite_existing_mqs" => 1,
-	// defaults dependant on lang
-	"tooltip_en_prop" => 1, // $this->is_en() ? 0 : 1,
-	//"auto_capitalize" => $this->is_en() ? 1 : 0,
-	// stylesheet import options
+	"tooltip_en_prop" => 1,
 	"css_imp_only_selected" => 0,
 	"css_imp_mqs" => 1,
 	"css_imp_sels" => 1,
@@ -863,21 +801,13 @@ $this->default_preferences = array(
 	"css_imp_always_cus_code" => 0,
 	"css_imp_copy_remote" => 1, // debating this
 	"css_imp_max" => 0,
-
 	"page_specific" => array(),
 	"pseudo_classes" => array(),
 	"pseudo_elements" => array(),
-	/*"favourite_filter" => array(
-		'page-id' => 1,
-		':hover' => 1,
-	),*/
-
-	// fonts
 	"font_config" => array(
 		'google' => false,
 		'typekit' => false,
 	),
-	'gfont_subset' => ''
 
 );
 
@@ -948,39 +878,106 @@ $this->page_class_prefix_options = array(
 );
 
 // preferences that should not be reset if user resets global preferences
-$this->default_preferences_dont_reset = array(
+$this->default_preferences_dont_reset_or_export = array(
 
-	"preview_url" => $this->home_url,
-	"preview_title" => false,
-	"preview_item_id" => false,
-
-	"version" => $this->version,
-	"previous_version" => '',
+	// Subscription contingent
 	"buyer_email" => '',
 	"buyer_validated" => false,
 	'retro_sub_check_done' => false,
 	"subscription" => $this->subscription_defaults,
 	"subscription_checks" => $this->subscription_check_defaults,
+
+	// Site contingent
+	"version" => $this->version,
+	"previous_version" => '',
+	"error_reporting" => array(
+		'anonymous_id' => mt_rand(1000000000, 9999999999),
+		'data' => array(
+			'last_sent' => null,
+		),
+		'file' => array(
+			'last_sent' => null,
+			'sends_today' => 0
+		),
+		'permission' => array()
+	),
+	"clean_uninstall" => 0,
+	"recent_logic" => array(),
+	"recent_custom_prefixes" => array(),
+	"preview_url" => $this->home_url,
+	"preview_title" => false,
+	"preview_item_id" => false,
+	"inlineJsProgData" => 0,
+	"draft_mode_uids" => array(),
+	"custom_paths" => array('/'),
+	"viewed_import_stylesheets" => array(
+		// theme css is an obvious one
+		get_stylesheet_directory_uri() . '/style.css',
+		// and MT might be useful for authors converting custom code to GUI
+		$this->micro_root_url . 'active-styles.css'
+	),
+	"num_saves" => 0, // keep track of saves for caching purposes
+	"num_unpublished_saves" => 0,
+	"code_tabs" => $this->custom_code,
+
+	// UI options contingent
+	"active_events" => '',
+	'g_fonts_used' => false,
+	'found_gf_subsets' => array(),
+	'g_url' => '',
+	'g_url_with_subsets' => '',
+	'gfont_subset' => '',
+	"asset_loading" => $default_asset_loading_config,
+	"asset_loading_published" => $default_asset_loading_config,
+	"global_stylesheet_required" => 1,
+	"global_stylesheet_required_published" => 1,
+	"load_js" => 0,
+	"load_js_published" => 0,
+	"custom-prefix-extraValue" => '',
+	"mt_color_variables_css" => "",
+
+	// UI state contingent
 	"active_theme" => 'customised',
 	"theme_in_focus" => '',
-	//"last_viewed_selector" => '',
 	"mq_device_focus" => 'all-devices',
 	"css_focus" => 'all-browsers',
 	"view_css_focus" => 'input',
 	"pg_focus" => 'font',
-	"m_queries" => $this->mq_min_max($arr),
-	"code_tabs" => $this->custom_code,
-	"initial_scale" => 0,
-	"abs_image_paths" => 0,
+	"grid_focus" => 'gridtemplate',
+	"transform_focus" => 'transformscale',
+	"generated_css_focus" => 0,
+	"returned_ajax_msg" => '',
+	"returned_ajax_msg_seen" => 1,
+
+	// Data processing/conversion contingent
 	"units_added_to_suggestions" => 0,
-
-	// subsets found in MT settings
-	'g_fonts_used' => false,
-	'found_gf_subsets' => array(),
-	'g_url' => '',
-	'g_url_with_subsets' => ''
-
+	"default_sug_values_set" => 0,
+	"default_sug_variables_set" => 0,
+	"manual_recompile_all_css" => 0,
+	"show_setup_screen" => 0, // until the feature is ready
 );
+
+// do export, don't reset
+$this->default_preferences_exportable = array(
+
+	// related but not dependent on UI data
+	"m_queries" => $this->mq_min_max($arr),
+	"active_scripts_deps" => 0,
+	"enq_js" => array(),
+	"my_props" => array(),
+
+	// useful to keep track of watched videos across installs
+	"external_videos" => array(
+		'last_viewed' => 'introducing-microthemer-7',
+		'watched' => array()
+	),
+);
+
+// do reset, don't export
+$this->default_preferences_resetable = array(
+	"hide_interface" => 0, // so they can fix a missing UI
+);
+
 
 // some preferences should only be set once we've checked WP dependent variables (e.g. integrations)
 if ($pd_context === 'setup_wp_dependent_vars'){
@@ -1268,11 +1265,19 @@ $this->menu = array(
 		'icon_class' => 'general-program-settings',
 		'sub' => array(
 
+			'initial_setup' => array(
+				'name' => esc_html__('Setup', 'microthemer'),
+				'title' => esc_attr__('Microthemer Setup', 'microthemer'),
+				'dialog' => 1,
+				'class' => 'mt-initial-setup',
+				'icon_name' => 'box-open'
+			),
+
 			// prompt to unlock
 			'buyer_validated' => array(
 				'name' => esc_html__('Unlock Microthemer', 'microthemer'),
 				'title' => $this->preferences['buyer_validated'] ?
-					esc_attr__('Validate license using a different unlock code', 'microthemer') :
+					esc_attr__('Validate license using a different license key', 'microthemer') :
 					esc_attr__('Enter your code to unlock Microthemer (see My Downloads on themeover.com)', 'microthemer'),
 				'dialog' => 1,
 				'class' => 'unlock-microthemer',
@@ -1314,13 +1319,7 @@ $this->menu = array(
 				'icon_name' => 'js'
 			),
 
-			/*'initial_setup' => array(
-				'name' => esc_html__('Initial Setup', 'microthemer'),
-				'title' => esc_attr__('Initial Microthemer Setup', 'microthemer'),
-				'dialog' => 1,
-				'class' => 'mt-initial-setup',
-				'icon_name' => 'box-open'
-			),*/
+
 
 			'auto_publish_mode' => array(
 				//'new_set' => 1,

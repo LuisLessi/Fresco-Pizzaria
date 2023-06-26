@@ -58,9 +58,9 @@ class Admin {
 	var $css_units = array();
 	var $folder_item_types = array();
 	//var $css_unit_sets = array();
-	var $default_my_props = array();
 	// @var array $options Stores the ui options for this plugin
 	var $options = array();
+	var $preferences = array();
     var $asset_loading_change = false;
 	//var $placeholderURLs = array();
 	var $serialised_post = array();
@@ -93,7 +93,9 @@ class Admin {
 	var $subgroup = '';
 	// default preferences set in constructor
 	var $default_preferences = array();
-	var $default_preferences_dont_reset = array();
+	var $default_preferences_exportable = array();
+	var $default_preferences_resetable = array();
+	var $default_preferences_dont_reset_or_export = array();
 	// edge mode fixed settings
 	var $edge_mode = array();
 
@@ -131,6 +133,9 @@ class Admin {
 	var $debug_save_package = TVR_DEBUG_DATA;
 	var $debug_selective_export = TVR_DEBUG_DATA;
 	var $show_me = ''; // for quickly printing vars in the top toolbar
+    var $setupError;
+    var $maxUploadPrefSize = (1024 * 1024 * 10); // 10MB
+    var $initial_preference_options;
     var $autoloadPreferencesList = array(
         'version',
         'num_saves',
@@ -165,8 +170,6 @@ class Admin {
         'admin_bar_shortcut',
 	    'top_level_shortcut'
     );
-
-	// Class Functions
 
 	function __construct(){
 		$this->init();
@@ -269,7 +272,7 @@ class Admin {
 
 		$domain =  $test_domain ? $test_domain : $this->home_url;
 
-		$base_url = ($proxy) // || 1 to force proxy
+		$base_url = ($proxy) //|| 1 // to force proxy
 			? 'https://validate.themeover.com/'
 			: 'https://themeover.com/wp-content/tvr-auto-update/validate.php';
 
@@ -367,6 +370,11 @@ class Admin {
 			$validation = $responseString && strlen($responseString) < 2;
 		}
 
+		/* Trigger firewall notification screen
+		 * $response['message'] = ''; // sebtest
+        $connection_details['url'] = 'https://validate.themeover.com/';
+		*/
+
 		// if no valid response, check for http issue
 		if (empty($response['message'])){
 
@@ -386,7 +394,7 @@ class Admin {
 					'debug' => array(
 						'responseString' => $responseString,
 						'decodedResponse' => $response,
-						'altDecoded' => $this->json('decode', $responseString)
+						//'altDecoded' => $this->json('decode', $responseString)
 					)
 				));
 			}
@@ -418,6 +426,8 @@ class Admin {
 		}
 
 		$this->change_unlock_status($context, $validation, $pref_array, $response, $was_capped_version);
+
+        return $validation;
 	}
 
 
@@ -498,7 +508,7 @@ class Admin {
 
 					case "invalid credentials":
 						$explain = '<p>The unlock credentials were invalid. Make sure you are entering 
-                                        the unlock code shown in 
+                                        the license key shown in 
                                         <a target="_blank" href="https://themeover.com/my-account/">My Downloads</a></p>';
 						break;
 
@@ -964,7 +974,6 @@ class Admin {
 		$this->maybeCreateOrUpdateRevsTable(); // only creates table if doesn't exist or needs updating
 		$wpdb->get_results("select id from ".$wpdb->prefix . "micro_revisions");
 
-
 		$previous_version = !empty($this->preferences['previous_version'])
 			? $this->preferences['previous_version']
 			: 'Previous version';
@@ -986,7 +995,7 @@ class Admin {
 				$this->log('','','error', 'revisions');
 			}
 
-			// clean any pre-update packs MT created when it using that system
+			// clean any pre-update packs MT created when it was using that system
 			$this->clean_pre_upgrade_backup_packs();
 
 			// export the old settings too, to ensure history doesn't get wiped
@@ -2656,7 +2665,11 @@ class Admin {
 			'css_func_map' =>  $css_func_map,
 			'unsupported_css_func_map' =>  $unsupported_css_func_map,
 			'params_to_strip' =>  $this->params_to_strip,
-			'suggested_screen_layouts' => $this->suggested_screen_layouts
+			'suggested_screen_layouts' => $this->suggested_screen_layouts,
+            'exportable_preferences' => array_merge(
+	            array_keys($this->default_preferences),
+	            array_keys($this->default_preferences_exportable)
+            )
 		);
 
 		$data.= 'TvrMT.data.prog = ' . json_encode($prog) . ';' . "\n\n";
@@ -3427,7 +3440,12 @@ class Admin {
 	// @return array - Retrieve the plugin preferences from the database.
 	function getPreferences($special_checks = false, $pd_context = false) {
 
-		$full_preferences = array_merge($this->default_preferences, $this->default_preferences_dont_reset);
+		$full_preferences = array_merge(
+            $this->default_preferences,
+            $this->default_preferences_dont_reset_or_export,
+            $this->default_preferences_exportable,
+            $this->default_preferences_resetable
+        );
 
 		// default preferences
 		if (!$thePreferences = get_option($this->preferencesName)) {
@@ -3481,172 +3499,175 @@ class Admin {
 	// Save the preferences
 
 
-	// common function for outputting yes/no radios
-	function preferences_grid($pref_cats, $settings_class){
+	function preferences_grid_items($opts){
 
+        $html = '';
 		// labels
 		$yes_label = __('Yes', 'microthemer' );
 		$no_label = __('No', 'microthemer' );
+
+		foreach ($opts as $key => $array) {
+
+			// skip edge mode if not available
+			if ($key == 'edge_mode' and !$this->edge_mode['available']){
+				continue;
+			}
+
+			// common
+			$input_name = 'tvr_preferences['.$key.']';
+			$array['link'] = ( !empty($array['link']) ) ? $array['link'] : '';
+
+			// if radio
+			if (empty($array['is_text'])){
+
+				// ensure various vars are defined
+				$li_class = 'fake-radio-parent';
+				$array['label_no'] = ( !empty($array['label_no']) ) ? $array['label_no'] : '';
+				$yes_val = ($key == 'draft_mode') ? $this->current_user_id : 1;
+				$no_val = 0;
+
+				if (!empty($this->preferences[$key])) {
+					$yes_checked = 'checked="checked"';
+					$yes_on = 'on';
+					$no_checked = $no_on = '';
+				} else {
+					$no_checked = 'checked="checked"';
+					$no_on = 'on';
+					$yes_checked = $yes_on = '';
+				}
+
+				$form_options = '
+                <span class="yes-wrap p-option-wrap">
+                    <input type="radio" autocomplete="off" class="radio"
+                       name="'.$input_name.'" value="'.$yes_val.'" '.$yes_checked.' />
+                       '.$this->iconFont('radio-btn-unchecked', array('class' => 'fake-radio '.$yes_on)).'
+                 
+                    <span class="ef-label">'.$yes_label.'</span>
+                </span>
+                <span class="no-wrap p-option-wrap">
+                    <input type="radio" autocomplete="off" class="radio"
+                       name="'.$input_name.'" value="'.$no_val.'" '.$no_checked.' />
+                     '.$this->iconFont('radio-btn-unchecked', array('class' => 'fake-radio '.$no_on)).'
+                    <span class="ef-label">'.$no_label.'</span>
+                </span>';
+
+			}
+
+			// else if input
+			else {
+				$li_class = 'mt-text-option';
+
+				if (!empty($array['one_line'])){
+					$li_class.= ' one-line';
+				}
+
+				$input_id = $input_class = $arrow_class = $class = $rel = $arrow = '';
+				$input_value = ( !empty($this->preferences[$key]) ) ? $this->preferences[$key] : '';
+				$extra_info = '';
+
+				// does it need a custom id?
+				if (!empty($array['input_id'])){
+					$input_id = $array['input_id'];
+				}
+				// does it need a custom input class?
+				if (!empty($array['input_class'])){
+					$input_class = $array['input_class'];
+				}
+				// does it need a custom arrow class?
+				if (!empty($array['arrow_class'])){
+					$arrow_class = $array['arrow_class'];
+				}
+				// does it need a custom input name?
+				if (!empty($array['input_name'])){
+					$input_name = $array['input_name'];
+				}
+				// does it need a custom input value?
+				if (!empty($array['input_value'])){
+					$input_value = $array['input_value'];
+				}
+				// do we want to add a data attribute (quick and dirty way to support one att)
+				if (!empty($array['extra_info'])){
+					$extra_info = ' data-info="'. $array['extra_info'].'"';
+				}
+
+				if (!empty($array['prop'])){
+					$extra_info.= ' data-prop="'. $array['prop'].'"';
+				}
+
+				// exception for css unit set (keep blank)
+				if ($input_id == 'css_unit_set'){
+					$input_value = '';
+				}
+
+				// is it a combobox?
+				if (!empty($array['combobox'])){
+					$class = 'combobox has-arrows';
+					$rel = 'rel="'.$array['combobox'].'"';
+					$arrow = '<span class="combo-arrow '.$arrow_class.'"></span>';
+				}
+
+				if (!empty($input_id)){
+					$input_id = 'id="'.$input_id.'"';
+				}
+
+				$form_options = '
+                <span class="tvr-input-wrap">
+                    <input '.$input_id.' type="text" autocomplete="off" name="'.$input_name.'"  
+                    class="'.$class . ' ' . $input_class.'" '.$rel . $extra_info.'
+                    value="'. esc_attr($input_value).'" />'
+                .$arrow .
+                '</span>';
+			}
+
+			// sometimes we use empty cell after
+			if (!empty($array['empty_before'])){
+				$html.= '<li class="empty-cell empty-before-'.$key.'"></li>';
+			}
+
+			// the option
+			$html.= '
+            <li class="'.$li_class.'">
+                <label>
+                    <span title="'.esc_attr($array['explain']).'">
+                        '.esc_html($array['label']) . ' ' . $array['link'].'
+                    </span>
+                </label>
+                '.$form_options.'
+            </li>';
+
+			// sometimes we use empty cell after
+			if (!empty($array['empty_after'])){
+				$html.= '<li class="empty-cell empty-after-'.$key.'"></li>';
+			}
+		}
+
+        return $html;
+
+	}
+
+    // common function for outputting yes/no radios
+	function preferences_grid($pref_cats, $settings_class){
 
 		// ensure CSS recompile is off by default
 		$this->preferences['manual_recompile_all_css'] = 0;
 
 		// generate the HTML
 		$html = '
-                <ul id="'.$settings_class.'" class="mt-form-settings '.$settings_class.'">';
+        <ul id="'.$settings_class.'" class="mt-form-settings '.$settings_class.'">';
 
 		foreach ($pref_cats as $cat_key => $cat_array){
 
 			$html.= '
-                        <li class="empty-cell empty-before-'.$cat_key.'"></li>
-                        <li class="preference-category pref-cat-'.$cat_key.'">'.$cat_array['label'].'</li>';
+            <li class="empty-cell empty-before-'.$cat_key.'"></li>
+            <li class="preference-category pref-cat-'.$cat_key.'">'.$cat_array['label'].'</li>';
 
-			$opts = $cat_array['items'];
-
-			foreach ($opts as $key => $array) {
-
-				// skip edge mode if not available
-				if ($key == 'edge_mode' and !$this->edge_mode['available']){
-					continue;
-				}
-
-				// common
-				$input_name = 'tvr_preferences['.$key.']';
-				$array['link'] = ( !empty($array['link']) ) ? $array['link'] : '';
-
-				// if radio
-				if (empty($array['is_text'])){
-
-					// ensure various vars are defined
-					$li_class = 'fake-radio-parent';
-					$array['label_no'] = ( !empty($array['label_no']) ) ? $array['label_no'] : '';
-					$yes_val = ($key == 'draft_mode') ? $this->current_user_id : 1;
-					$no_val = 0;
-
-					if (!empty($this->preferences[$key])) {
-						$yes_checked = 'checked="checked"';
-						$yes_on = 'on';
-						$no_checked = $no_on = '';
-					} else {
-						$no_checked = 'checked="checked"';
-						$no_on = 'on';
-						$yes_checked = $yes_on = '';
-					}
-
-					$form_options = '
-                                <span class="yes-wrap p-option-wrap">
-                                    <input type="radio" autocomplete="off" class="radio"
-                                       name="'.$input_name.'" value="'.$yes_val.'" '.$yes_checked.' />
-                                       '.$this->iconFont('radio-btn-unchecked', array('class' => 'fake-radio '.$yes_on)).'
-                                 
-                                    <span class="ef-label">'.$yes_label.'</span>
-                                </span>
-                                 <span class="no-wrap p-option-wrap">
-                                    <input type="radio" autocomplete="off" class="radio"
-                                       name="'.$input_name.'" value="'.$no_val.'" '.$no_checked.' />
-                                     '.$this->iconFont('radio-btn-unchecked', array('class' => 'fake-radio '.$no_on)).'
-                                    <span class="ef-label">'.$no_label.'</span>
-                                </span>';
-
-				}
-
-				// else if input
-				else {
-					$li_class = 'mt-text-option';
-
-					if (!empty($array['one_line'])){
-						$li_class.= ' one-line';
-					}
-
-					$input_id = $input_class = $arrow_class = $class = $rel = $arrow = '';
-					$input_value = ( !empty($this->preferences[$key]) ) ? $this->preferences[$key] : '';
-					$extra_info = '';
-
-					// does it need a custom id?
-					if (!empty($array['input_id'])){
-						$input_id = $array['input_id'];
-					}
-					// does it need a custom input class?
-					if (!empty($array['input_class'])){
-						$input_class = $array['input_class'];
-					}
-					// does it need a custom arrow class?
-					if (!empty($array['arrow_class'])){
-						$arrow_class = $array['arrow_class'];
-					}
-					// does it need a custom input name?
-					if (!empty($array['input_name'])){
-						$input_name = $array['input_name'];
-					}
-					// does it need a custom input value?
-					if (!empty($array['input_value'])){
-						$input_value = $array['input_value'];
-					}
-					// do we want to add a data attribute (quick and dirty way to support one att)
-					if (!empty($array['extra_info'])){
-						$extra_info = ' data-info="'. $array['extra_info'].'"';
-					}
-
-					if (!empty($array['prop'])){
-						$extra_info.= ' data-prop="'. $array['prop'].'"';
-					}
-
-					// exception for css unit set (keep blank)
-					if ($input_id == 'css_unit_set'){
-						$input_value = '';
-					}
-
-					// is it a combobox?
-					if (!empty($array['combobox'])){
-						$class = 'combobox has-arrows';
-						$rel = 'rel="'.$array['combobox'].'"';
-						$arrow = '<span class="combo-arrow '.$arrow_class.'"></span>';
-					}
-
-					if (!empty($input_id)){
-						$input_id = 'id="'.$input_id.'"';
-					}
-
-					$form_options = '
-                                <span class="tvr-input-wrap">
-                                    <input '.$input_id.' type="text" autocomplete="off" name="'.$input_name.'"  
-                                    class="'.$class . ' ' . $input_class.'" '.$rel . $extra_info.'
-                                    value="'. esc_attr($input_value).'" />'
-					                .$arrow .
-					                '</span>';
-				}
-
-				// sometimes we use empty cell after
-				if (!empty($array['empty_before'])){
-					$html.= '<li class="empty-cell empty-before-'.$key.'"></li>';
-				}
-
-
-				// the option
-				$html.= '
-                            <li class="'.$li_class.'">
-                                <label>
-                                    <span title="'.esc_attr($array['explain']).'">
-                                        '.esc_html($array['label']) . ' ' . $array['link'].'
-                                    </span>
-                                </label>
-                                '.$form_options.'
-                            </li>';
-
-
-				// sometimes we use empty cell after
-				if (!empty($array['empty_after'])){
-					$html.= '<li class="empty-cell empty-after-'.$key.'"></li>';
-				}
-			}
-
+			$html.= $this->preferences_grid_items($cat_array['items']);
 		}
 
 		$html.= '
-                </ul>';
+        </ul>';
 
 		return $html;
-
 	}
 
 	// common function for outputting yes/no radios
@@ -3877,13 +3898,17 @@ class Admin {
 		}
 
 		// include the user's current media queries for restoring back
-		$save_data['non_section']['active_queries'] = $this->preferences['m_queries'];
+        if (!empty($save_data)){
+	        $save_data['non_section']['active_queries'] = $this->preferences['m_queries'];
+        }
 
 		// add the revision to the table
 		global $wpdb;
 		$table_name = $wpdb->prefix . "micro_revisions";
-		$serialized_data = serialize($save_data);
-		$data_size = round(strlen($serialized_data)/1000).'KB';
+		$serialized_data = $save_data ? serialize($save_data) : '';
+        $serialized_preferences = ($preferences ? serialize($preferences) : '');
+        $dataToSize = $serialized_data . $serialized_preferences;
+		$data_size = round(strlen($dataToSize)/1000).'KB';
 		// $wpdb->insert (columns and data should not be SQL escaped): https://developer.wordpress.org/reference/classes/wpdb/insert/
 		$rows_affected = $wpdb->insert( $table_name, array(
 			'time' => current_time('mysql', false), // use blogs local time - doesn't work on Nelson's site
@@ -3896,7 +3921,7 @@ class Admin {
 
 			// pass in preferences when a revision should revert to workspace settings
 			// adding this so users can rollback to a pre-speed version of MT in case of an upgrade issue
-			'preferences' => ($preferences ? serialize($preferences) : false),
+			'preferences' => $serialized_preferences,
 			'upgrade_backup' => $upgrade_backup,
 		));
 
@@ -3925,16 +3950,14 @@ class Admin {
 		$wpdb->get_results("select id from $table_name 
 				where saved != 1 $maybe_exclude_backups order by id asc");
 
+		// this will not delete saved or backups for regular saves. And wont delete saved backups ever.
 		if ($wpdb->num_rows > $max_revisions) {
-
-			$excess_rows = intval($wpdb->num_rows - $max_revisions);
-
-			// this will not delete saved or backups for regular saves. And wont delete saved backups ever.
+			$excess_rows = ($wpdb->num_rows - $max_revisions);
 			$sql = "delete from $table_name 
                     where saved != 1 $maybe_exclude_backups order by id asc limit $excess_rows";
 			$wpdb->query($sql);
-
 		}
+
 		return true;
 	}
 
@@ -4196,28 +4219,29 @@ class Admin {
 
 	// Restore a revision
 	function restoreRevision($rev_key) {
-		// get the revision
+
+        // get the revision
 		global $wpdb;
 		$table_name = $wpdb->prefix . "micro_revisions";
 		$rev = $wpdb->get_row( $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $rev_key) );
-		$rev->settings = unserialize($rev->settings);
-
-		// add css units, mq keys (extra tabs) etc to settings display correctly
-		$filtered_json = $this->filter_incoming_data('restore', $rev->settings);
-
-
-
-		// if special revision that also has preferences, restore those too
-		if (!empty($rev->preferences)){
-			update_option($this->preferencesName, unserialize($rev->preferences));
-		}
 
 		// signal that all selectors should be recompiled (to ensure latest data structure)
 		$this->update_preference('manual_recompile_all_css', 1);
 
-		// restore to options DB field
-		update_option($this->optionsName, $filtered_json);
-		$this->options = get_option($this->optionsName); // this DB interaction doesn't seem necessary...
+        // if revision has preferences, restore those
+		if (!empty($rev->preferences)){
+			update_option($this->preferencesName, unserialize($rev->preferences));
+		}
+
+		// restore to options DB field - unless this is purely a revisions history
+        if (!empty($rev->settings)){
+	        $rev->settings = unserialize($rev->settings);
+	        // add css units, mq keys (extra tabs) etc to settings display correctly
+	        $filtered_json = $this->filter_incoming_data('restore', $rev->settings);
+	        update_option($this->optionsName, $filtered_json);
+	        $this->options = get_option($this->optionsName); // this DB interaction doesn't seem necessary...
+        }
+
 		return true;
 	}
 
@@ -4794,6 +4818,146 @@ class Admin {
 				wp_die('Access denied');
 			}
 
+			// initial microthemer setup
+			if (isset($_POST['mt_initial_setup_submit'])) {
+
+				check_admin_referer( 'mt_initial_setup_form' );
+
+                $error = false;
+                $imported = false;
+				$pref_array = array();
+
+                // if they provided an import file, load that
+                if (!empty($_FILES['preferences_file']['name'])){
+
+	                $filePath = $_FILES['preferences_file']['tmp_name'];
+	                $fileSize = filesize($filePath);
+	                $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+	                $fileType = finfo_file($fileInfo, $filePath);
+                    $ext = $this->get_extension($_FILES['preferences_file']['name']);
+                    $max = ' (max '.(floor($this->maxUploadPrefSize / 1000000)).'MB)';
+
+                    // validate
+                    if (!is_uploaded_file($filePath)){
+	                    $error = 'Incorrect file'; // only shows if user up to no good
+                    } elseif ($fileSize > $this->maxUploadPrefSize){
+	                    $error = 'File size too big' . $max;
+	                } elseif ($fileType !== 'application/json' || $ext !== 'json'){
+		                $error = 'Incorrect file type. You must upload a .json file';
+	                } elseif ($_FILES['preferences_file']['error']){
+	                    $phpFileUploadErrors = array(
+		                    1 => 'The uploaded file exceeds the upload_max_filesize directive in php.ini',
+		                    2 => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form' . $max,
+		                    3 => 'The uploaded file was only partially uploaded',
+		                    4 => 'No file was uploaded',
+		                    6 => 'Missing a temporary folder',
+		                    7 => 'Failed to write file to disk.',
+		                    8 => 'A PHP extension stopped the file upload.',
+	                    );
+
+                        // allow for PHP to add more error codes without failing
+                        if (isset($phpFileUploadErrors[ $_FILES['preferences_file']['error'] ])){
+	                        $error = $phpFileUploadErrors[ $_FILES['preferences_file']['error'] ];
+                        } else {
+	                        $error = 'Unknown error';
+                        }
+	                }
+
+                    // validation passed
+                    else {
+
+                        if (!$json = file_get_contents($filePath)){
+	                        $error = 'The file had no content';
+                        } elseif (!$pref_array = $this->json('decode', $json)){
+	                        $error = 'The JSON file could not be read';
+                        } else {
+                            // maybe remove optional preferences
+	                        $optional = array('my_props', 'm_queries', 'enq_js', 'active_scripts_deps');
+	                        foreach ($optional as $key){
+		                        $check_key = $key === 'active_scripts_deps' ? 'enq_js' : $key; // one checkbox for both
+		                        if (empty($_POST['tvr_optional_preferences'][$check_key])){
+			                        unset($pref_array[$key]);
+		                        }
+	                        }
+	                        //wp_die('The final prefs: <pre>' . print_r($pref_array, 1) . '</pre>');
+	                        $this->savePreferences($pref_array);
+
+	                        $imported = true;
+                        }
+                    }
+
+                    // display the type of error to the user
+                    if ($error){
+	                    $this->log(
+		                    esc_html__('File upload error', 'microthemer'),
+		                    '<p>' . $error . '</p>',
+		                    'error'
+	                    );
+                    }
+                }
+
+                // else save the handful of preferences
+                else {
+
+                    foreach ($_POST['tvr_preferences'] as $key => $value){
+                        switch($key){
+                            case 'buyer_email':
+	                            $pref_array[$key] = strip_tags($value);
+                                break;
+                            default:
+	                            $pref_array[$key] = intval($value);
+                                break;
+                        }
+                    }
+
+                    $this->savePreferences($pref_array);
+
+                    //wp_die('filtered prefs <pre>' . print_r($_POST, 1) . '</pre>');
+                }
+
+                // update the error reporting preferences (might be done in combo with file upload
+                // so keep separate from save preferences code above
+                $pref_array['error_reporting'] = $this->preferences['error_reporting'];
+				$pref_array['error_reporting']['permission'] = array();
+                if (isset($_POST['error_reporting_permission']) && is_array($_POST['error_reporting_permission'])){
+	                foreach ($_POST['error_reporting_permission'] as $key => $value){
+		                $pref_array['error_reporting']['permission'][$key] = intval($value);
+	                }
+                }
+				$this->savePreferences($pref_array);
+
+				// try to unlock if they supply a new license key
+                if (!empty($_POST['tvr_preferences']['buyer_email'])){
+	                $response = $this->get_validation_response($_POST['tvr_preferences']['buyer_email']);
+                    if (!$response){
+                        $error = 'Unlock fail';
+                    }
+                }
+
+				// add to revision table
+				$this->updateRevisions(
+					'',
+					$this->json_format_ua(
+						'mtif-cog',
+						($imported
+                            ? esc_html__('Preferences imported', 'microthemer')
+                            : esc_html__('Preferences updated', 'microthemer')
+                        )
+					),
+					true,
+					$this->preferences
+				);
+
+                // if we have an error, show the setup screen again
+                if ($error){
+                    $this->savePreferences(array(
+                            'show_setup_screen' => 1
+                    ));
+                    $this->setupError = $error;
+                }
+
+			}
+
 			// validate email todo make this an ajax request, with user feedback
 			if (isset($_POST['tvr_ui_validate_submit'])) {
 
@@ -4803,6 +4967,7 @@ class Admin {
 				$this->get_validation_response($_POST['tvr_preferences']['buyer_email']);
 			}
 
+            // make it possible to set an invalid license key
 			$this->invalidLic();
 
 			// if user navigates from front to MT via toolbar, set previous front page in preview
@@ -5956,8 +6121,8 @@ class Admin {
 	}
 
 	//check if the file is acceptable
-	function is_acceptable($file) {
-		$ext = $this->get_extension($file);
+	function is_acceptable($file, $ext = false) {
+		$ext = $ext ? $ext : $this->get_extension($file);
 		if ($ext == 'jpg' or
 		    $ext == 'jpeg' or
 		    $ext == 'png' or
@@ -9926,15 +10091,6 @@ class Admin {
 	function filter_incoming_data($con, $data){
 
 		$filtered_json = $data;
-
-		// Unitless css values may need to be auto-adjusted, including MQs
-		/*$filtered_json = $this->filter_json_css_units($data);
-				if (!empty($filtered_json['non_section']['m_query']) and
-				    is_array($filtered_json['non_section']['m_query'])) {
-					foreach ($filtered_json['non_section']['m_query'] as $m_key => $array) {
-						$filtered_json['non_section']['m_query'][$m_key] = $this->filter_json_css_units($array);
-					}
-				}*/
 
 		$active_enq_js = !empty($filtered_json['non_section']['active_enq_js'])
 			? $filtered_json['non_section']['active_enq_js']

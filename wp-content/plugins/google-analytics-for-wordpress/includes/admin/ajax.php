@@ -349,3 +349,41 @@ function monsterinsights_handle_get_plugin_info() {
 }
 
 add_action( 'wp_ajax_nopriv_monsterinsights_get_plugin_info', 'monsterinsights_handle_get_plugin_info' );
+
+/**
+ * User journey report show demo report for not licensed.
+ *
+ * @return void
+ * @since 8.16
+ */
+function monsterinsights_user_journey_demo_report_ajax() {
+	$report = array();
+
+	$sources   = array( 'google', 'newsletter', 'billboard' );
+	$mediums   = array( 'cpc', 'banner', 'email' );
+	$campaigns = array( 'campaign-name', 'slogan', 'promo-code' );
+
+	for ( $i = 1; $i <= 13; $i ++ ) {
+		$rand_key = array_rand( $sources );
+
+		$report[] = array(
+			'transaction_id' => wp_rand( 12, 30 ),
+			'steps'          => wp_rand( 3, 8 ),
+			'order_total'    => wp_rand( 10, 50 ),
+			'utm_source'     => $sources[ $rand_key ],
+			'utm_medium'     => $mediums[ $rand_key ],
+			'utm_campaign'   => $campaigns[ $rand_key ],
+			'purchase_date'  => '--',
+		);
+	}
+
+	wp_send_json( array( 'items' => $report, 'demo'  => true ) );
+}
+
+$license_type = MonsterInsights()->license->get_license_type();
+
+// If it is not a pro licensed.
+if ( ! ( $license_type === 'master' || $license_type === 'pro' ) ) {
+	add_action( 'wp_ajax_monsterinsights_user_journey_report', 'monsterinsights_user_journey_demo_report_ajax' );
+	add_action( 'wp_ajax_monsterinsights_user_journey_report_filter_params', '__return_false' );
+}
