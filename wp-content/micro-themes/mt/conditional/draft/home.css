@@ -1,0 +1,46 @@
+
+/*= Home ====================== */
+
+/** Home >> Ast builder grid row container **/
+#ast-desktop-header .ast-builder-grid-row-container {
+	color: rgb(255, 192, 203) !important;
+}
+
+/** Home >> Ast custom button **/
+#ast-desktop-header .ast-custom-button {
+	color: rgb(255, 255, 255) !important;
+	padding-top: 13px !important;
+	padding-bottom: 13px !important;
+}
+
+/** Home >> Ast scroll top **/
+#ast-scroll-top {
+	color: rgb(255, 255, 255) !important;
+	background: #F47521 !important;
+}
+
+
+/*( < 1200 )*/
+@media (max-width: 1199.98px) {
+	/** Home >> Uagb ifb title **/
+	.uagb-block-f4b6edcd .uagb-ifb-title {
+	text-align: justify !important;
+}
+
+}
+
+
+/*( < 480 )*/
+@media (max-width: 479.98px) {
+	/** Home >> Custom logo **/
+	#ast-mobile-header .custom-logo {
+	width: 70px !important;
+}
+
+	/** Home >> Uagb ifb title **/
+	.uagb-block-f4b6edcd .uagb-ifb-title {
+	text-align: left !important;
+}
+
+}
+
