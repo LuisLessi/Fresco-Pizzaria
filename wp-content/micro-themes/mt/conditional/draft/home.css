@@ -44,3 +44,14 @@
 
 }
 
+
+/*( <375 )*/
+@media (max-width: 374.98px) {
+	/** Home >> Ast custom button **/
+	#ast-desktop-header .ast-custom-button {
+	font-family: "Arial Black" !important;
+	color: rgb(85, 41, 41) !important;
+}
+
+}
+
